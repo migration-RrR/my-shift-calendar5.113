@@ -11,18 +11,13 @@ const checkBtn = document.getElementById("check-date");
 const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const weekDays = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
 
-// Базовая дата синхронизации (15 марта 2026)
+// Базовая дата синхронизации
 const baseDateUTC = new Date(Date.UTC(2026, 2, 15, 0, 0, 0));
 
-// Смещения для каждой бригады (на 15 марта)
-const brigadeOffsets = {
-  A:3, // 2 бригада → выходной
-  B:2, // 1 бригада → отсыпной
-  C:1, // 4 бригада → ночь
-  D:0  // 3 бригада → день
-};
+// Смещения для бригад
+const brigadeOffsets = { A:3, B:2, C:1, D:0 };
 
-// Кнопки выбора бригады
+// Кнопки бригад
 document.querySelectorAll(".brigade-btn").forEach(btn=>{
   btn.onclick = ()=>{
     document.querySelectorAll(".brigade-btn").forEach(b=>b.classList.remove("active"));
@@ -39,14 +34,14 @@ document.querySelectorAll(".brigade-btn").forEach(btn=>{
 const activeBtn = document.querySelector(`[data-brigade="${selectedBrigade}"]`);
 if(activeBtn) activeBtn.classList.add("active");
 
-// Рассчет смены без учета таймзоны
+// Функция расчета смены
 function getShift(date){
   const cycle = shiftCycle;
 
-  // Переводим дату в UTC, чтобы на телефоне не было смещений
+  // переводим дату в UTC
   const dUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 
-  const diff = Math.floor((dUTC - baseDateUTC) / 86400000); // количество дней от базовой даты
+  const diff = Math.floor((dUTC - baseDateUTC) / 86400000);
   let index = (diff + brigadeOffsets[selectedBrigade]) % 4;
   if(index < 0) index += 4;
 
@@ -61,11 +56,7 @@ function generateCalendar(){
 
   const yearTitle = document.createElement("h1");
   yearTitle.style.textAlign = "center";
-  yearTitle.innerHTML = `
-    <button id="prevYear">←</button>
-    ${currentYear}
-    <button id="nextYear">→</button>
-  `;
+  yearTitle.innerHTML = `<button id="prevYear">←</button>${currentYear}<button id="nextYear">→</button>`;
   calendarEl.appendChild(yearTitle);
 
   document.getElementById("prevYear").onclick = ()=>{
@@ -117,7 +108,7 @@ function generateCalendar(){
       const date = new Date(currentYear, month, day);
       const shift = getShift(date);
 
-      if(shift === "day" || shift === "night"){
+      if(shift==="day"||shift==="night"){
         monthHours += 11.5;
         monthShifts++;
       }
@@ -136,9 +127,7 @@ function generateCalendar(){
         cell.classList.add("selected","show-popup");
       };
 
-      if(date.toDateString() === today.toDateString()){
-        cell.classList.add("today");
-      }
+      if(date.toDateString() === today.toDateString()) cell.classList.add("today");
 
       daysContainer.appendChild(cell);
     }
@@ -147,10 +136,7 @@ function generateCalendar(){
 
     const total = document.createElement("div");
     total.className = "month-total";
-    total.innerHTML = `
-      Итого часов: <strong>${monthHours}</strong> ч<br>
-      Итого смен: <strong>${monthShifts}</strong>
-    `;
+    total.innerHTML = `Итого часов: <strong>${monthHours}</strong> ч<br>Итого смен: <strong>${monthShifts}</strong>`;
     monthDiv.appendChild(total);
 
     calendarEl.appendChild(monthDiv);
@@ -164,12 +150,12 @@ function highlightDate(d){
   if(!targetMonth) return;
 
   const dayCells = targetMonth.querySelectorAll(".day-cell:not(.empty)");
-  dayCells.forEach(c => c.classList.remove("selected","show-popup"));
+  dayCells.forEach(c=>c.classList.remove("selected","show-popup"));
 
-  const targetDay = Array.from(dayCells).find(c => parseInt(c.textContent) === d.getDate());
+  const targetDay = Array.from(dayCells).find(c=>parseInt(c.textContent)===d.getDate());
   if(targetDay){
     targetDay.classList.add("selected","show-popup");
-    targetDay.scrollIntoView({ behavior:"smooth", block:"center" });
+    targetDay.scrollIntoView({behavior:"smooth", block:"center"});
   }
 }
 
@@ -180,7 +166,7 @@ if(todayBtn){
     if(target){
       document.querySelectorAll(".day-cell").forEach(c=>c.classList.remove("selected","show-popup"));
       target.classList.add("selected","show-popup");
-      target.scrollIntoView({ behavior:"smooth", block:"center" });
+      target.scrollIntoView({behavior:"smooth", block:"center"});
     }
   };
 }
@@ -194,18 +180,13 @@ if(checkBtn){
       currentYear = d.getFullYear();
       generateCalendar();
       setTimeout(()=>highlightDate(d),100);
-    }else{
-      highlightDate(d);
-    }
+    }else highlightDate(d);
   };
 }
 
 // Формат смен
 function formatShift(s){
-  return s==="day" ? "День" :
-         s==="night" ? "Ночь" :
-         s==="rest" ? "Отсыпной" :
-         "Выходной";
+  return s==="day"?"День":s==="night"?"Ночь":s==="rest"?"Отсыпной":"Выходной";
 }
 
 // Уведомление о смене
@@ -213,35 +194,23 @@ function showShiftAlert(){
   const alert = document.getElementById("shift-alert");
   if(!alert) return;
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate()+1);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
 
   const todayShift = getShift(today);
   const tomorrowShift = getShift(tomorrow);
 
-  const format = s => s==="day" ? "☀️ Сегодня в день" :
-                     s==="night" ? "🌙 Сегодня в ночь" :
-                     s==="rest" ? "😴 Сегодня отсыпной" :
-                     "🟢 Сегодня выходной";
+  const format = s=>s==="day"?"☀️ Сегодня в день":s==="night"?"🌙 Сегодня в ночь":s==="rest"?"😴 Сегодня отсыпной":"🟢 Сегодня выходной";
+  const formatTomorrow = s=>s==="day"?"☀️ Завтра в день":s==="night"?"🌙 Завтра в ночь":s==="rest"?"😴 Завтра отсыпной":"🟢 Завтра выходной";
 
-  const formatTomorrow = s => s==="day" ? "☀️ Завтра в день" :
-                             s==="night" ? "🌙 Завтра в ночь" :
-                             s==="rest" ? "😴 Завтра отсыпной" :
-                             "🟢 Завтра выходной";
-
-  alert.innerHTML = format(todayShift) + "<br>" + formatTomorrow(tomorrowShift);
+  alert.innerHTML = format(todayShift)+"<br>"+formatTomorrow(tomorrowShift);
 
   setTimeout(()=>alert.classList.add("show"),500);
   setTimeout(()=>alert.classList.remove("show"),4000);
 }
 
-// Service worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+// Service Worker
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 
 // Запуск
 generateCalendar();
